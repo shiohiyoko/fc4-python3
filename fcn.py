@@ -12,7 +12,8 @@ from __future__ import print_function
 # Things to clarify:
 #   per_pixel_est is actually per-patch estimation, each patch is the receptive field of the FCN.
 
-import cPickle as pickle
+#import cPickle as pickle
+import _pickle as cPickle
 import math
 import time
 import os
@@ -30,7 +31,9 @@ from config import *
 from squeeze_net import create_convnet
 from summary_utils import *
 import random
-slim = tf.contrib.slim
+
+#slim = tf.contrib.slim
+import tf_slim as slim
 
 
 # An alternative loss function to original angular loss
@@ -42,6 +45,9 @@ def smooth_l1(x):
 class FCN:
 
   def __init__(self, sess=None, name=None, kwargs={}):
+    import tensorflow.compat.v1 as tf
+    tf.disable_v2_behavior()
+
     global TRAINING_FOLDS, TEST_FOLDS
     self.name = name
     self.wd = GLOBAL_WEIGHT_DECAY
@@ -64,6 +70,9 @@ class FCN:
   # images: 0-65535 linear RGB
   @staticmethod
   def build_branches(images, dropout):
+    import tensorflow.compat.v1 as tf
+    tf.disable_v2_behavior()
+
     images = tf.clip_by_value(images, 0.0, 65535.0)
     if USE_SHORTCUT:
       # Apply grey-world first
@@ -155,6 +164,9 @@ class FCN:
 
   # Build the network
   def build(self):
+    import tensorflow.compat.v1 as tf
+    tf.disable_v2_behavior()
+
     self.dropout = tf.placeholder(tf.float32, shape=(), name='dropout')
     # We don't use per_patch_weight any more.
     self.per_patch_weight = tf.placeholder(
@@ -283,6 +295,9 @@ class FCN:
       assert False
 
   def train(self, epochs, backup=True):
+    import tensorflow.compat.v1 as tf
+    tf.disable_v2_behavior()
+
     trigger = LowestTrigger()
     if not self.try_make_ckpt_folder():
       print('Warning: folder exists!!!')
@@ -420,9 +435,9 @@ class FCN:
 
       #pixels = pixels[:,:,::-1]
 
-      cv2.imshow('pixels', cv2.resize(pixels, (0, 0), fx=10, fy=10))
-      cv2.imshow('image', cv2.resize(img, (0, 0), fx=0.5, fy=0.5))
-      cv2.waitKey(0)
+      ### cv2.imshow('pixels', cv2.resize(pixels, (0, 0), fx=10, fy=10))
+      ### cv2.imshow('image', cv2.resize(img, (0, 0), fx=0.5, fy=0.5))
+      ### cv2.waitKey(0)
 
   # Test each image in multiple resolutions, and then average
   def test_multi(self, summary=False, summary_key=0):
@@ -467,10 +482,10 @@ class FCN:
 
       pixels = pixels[:, :, ::-1]
 
-      cv2.imshow('pixels', cv2.resize(pixels, (0, 0), fx=2, fy=2))
-      cv2.imshow('illum', cv2.resize(illum, (0, 0), fx=2, fy=2))
-      cv2.imshow('image', img)
-      cv2.waitKey(0)
+      ### cv2.imshow('pixels', cv2.resize(pixels, (0, 0), fx=2, fy=2))
+      ### cv2.imshow('illum', cv2.resize(illum, (0, 0), fx=2, fy=2))
+      ### cv2.imshow('image', img)
+      ### cv2.waitKey(0)
 
       illum = illum.astype(np.float32)
       pixels = pixels.astype(np.float32)
@@ -541,13 +556,7 @@ class FCN:
       return img, pixels, est, r.illum
     assert False, "Image not found"
 
-  def test(self,
-           summary=False,
-           scales=[1.0],
-           weights=[],
-           summary_key=0,
-           data=None,
-           eval_speed=False, visualize=False):
+  def test(self, summary=False, scales=[1.0], weights=[], summary_key=0, data=None, eval_speed=False, visualize=False):
     if not TEST_FOLDS:
       return [0]
     if data is None:
@@ -592,9 +601,7 @@ class FCN:
           with tf.variable_scope("FCN", reuse=True):
             test_net['pixels'] = FCN.build_branches(test_net['images'], 1.0)
             test_net['est'] = tf.reduce_sum(test_net['pixels'], axis=(1, 2))
-          test_net['merged'] = get_visualization(
-              test_net['images'], test_net['pixels'], test_net['est'],
-              test_net['illums'], target_shape)
+          test_net['merged'] = get_visualization(test_net['images'], test_net['pixels'], test_net['est'], test_net['illums'], target_shape)
           self.test_nets[shape] = test_net
         test_net = self.test_nets[shape]
 
@@ -661,10 +668,10 @@ class FCN:
         summary_fn = '%s/%5.3f-%s.png' % (folder, error, fn)
         cv2.imwrite(summary_fn, merged[:, :, ::-1] * 255)
         
-    if visualize:
-      for fn, error, merged in summaries:
-        cv2.imshow('Testing', merged[:, :, ::-1])
-        cv2.waitKey(0)
+    ###if visualize:
+    ###  for fn, error, merged in summaries:
+    ###    cv2.imshow('Testing', merged[:, :, ::-1])
+    ###    cv2.waitKey(0)
       
     return errors, ppt, outputs, ground_truth, ret, avg_confidence
 
@@ -673,6 +680,9 @@ class FCN:
   # images are BGR
   # TODO: move network creation here
   def test_external(self, images, scale=1.0, fns=None, show=True, write=True):
+    import tensorflow.compat.v1 as tf
+    tf.disable_v2_behavior()
+
     illums = []
     confidence_maps = []
     for img, filename in zip(images, fns):
@@ -688,16 +698,12 @@ class FCN:
         target_shape = tuple(map(int, target_shape))
 
         test_net = {}
-        test_net['illums'] = tf.placeholder(
-            tf.float32, shape=(None, 3), name='test_illums')
-        test_net['images'] = tf.placeholder(
-            tf.float32, shape=(None, shape[0], shape[1], 3), name='test_images')
+        test_net['illums'] = tf.placeholder(tf.float32, shape=(None, 3), name='test_illums')
+        test_net['images'] = tf.placeholder(tf.float32, shape=(None, shape[0], shape[1], 3), name='test_images')
         with tf.variable_scope("FCN", reuse=True):
           test_net['pixels'] = FCN.build_branches(test_net['images'], 1.0)
           test_net['est'] = tf.reduce_sum(test_net['pixels'], axis=(1, 2))
-        test_net['merged'] = get_visualization(
-            test_net['images'], test_net['pixels'], test_net['est'],
-            test_net['illums'], target_shape)
+        test_net['merged'] = get_visualization(test_net['images'], test_net['pixels'], test_net['est'], test_net['illums'], target_shape)
         self.test_nets[shape] = test_net
 
       test_net = self.test_nets[shape]
@@ -720,21 +726,22 @@ class FCN:
       merged = merged[0]
       illums.append(est)
 
-      if show:
-        cv2.imshow('Ret', merged[:, :, ::-1])
-        k = cv2.waitKey(0) % (2**20)
+      ###if show:
+      ###  cv2.imshow('Ret', merged[:, :, ::-1])
+      ###  k = cv2.waitKey(0) % (2**20)
+
       #if k == ord('s'):
       filename = filename.split('/')[-1]
       if write:
-        cv2.imwrite('/data/common/outputs/%s' % filename,
-                    merged[:, :, ::-1] * 255.0)
+        cv2.imwrite('/data/common/outputs/%s' % filename, merged[:, :, ::-1] * 255.0)
       try:
         os.makedirs('cc_outputs')
       except:
         pass
+
       corrected = np.power(img[:,:,::-1] / 65535 / est[None, None, :] * np.mean(est), 1/2.2)[:,:,::-1]
-      cv2.imshow("corrected", corrected)
-      cv2.waitKey(0)
+      ### cv2.imshow("corrected", corrected)
+      ### cv2.waitKey(0)
       cv2.imwrite('cc_outputs/corrected_%s' % filename, corrected * 255.0)
       
     return illums, confidence_maps
@@ -849,6 +856,9 @@ class FCN:
     print("Model %s restored." % fn)
 
   def get_angular_loss(self, vec1, vec2, length_regularization=0.0):
+    import tensorflow.compat.v1 as tf
+    tf.disable_v2_behavior()
+
     with tf.name_scope('angular_error'):
       safe_v = 0.999999
       if len(vec1.get_shape()) == 2:

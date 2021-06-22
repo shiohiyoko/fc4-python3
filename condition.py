@@ -53,11 +53,11 @@ class AsyncTaskManager:
 
 
 def task():
-  print 'begin sleeping...'
+  print('begin sleeping...')
   time.sleep(1)
-  print 'end sleeping.'
+  print('end sleeping.')
   task.i += 1
-  print 'returns', task.i
+  print('returns', task.i)
   return task.i
 
 
@@ -69,7 +69,7 @@ if __name__ == '__main__':
   for i in range(5):
     ret = async.get_next()
     # ret = task()
-    print 'got', ret
+    print('got', ret)
     time.sleep(1)
   async.stop()
-  print time.time() - t
+  print(time.time() - t)

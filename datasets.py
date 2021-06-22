@@ -1,5 +1,6 @@
 import cv2
-import cPickle as pickle
+#import cPickle as pickle
+import _pickle as cPickle
 import scipy.io
 import numpy as np
 import os
@@ -57,16 +58,18 @@ class DataSet:
     return self.get_directory() + self.get_subset_name() + 'meta.pkl'
 
   def dump_meta_data(self, meta_data):
-    print 'Dumping data =>', self.get_meta_data_fn()
-    print '  Total records:', sum(map(len, meta_data))
-    print '  Slices:', map(len, meta_data)
+    print('Dumping data =>', self.get_meta_data_fn())
+    print('  Total records:', sum(map(len, meta_data)))
+    print('  Slices:', map(len, meta_data))
     with open(self.get_meta_data_fn(), 'wb') as f:
-      pickle.dump(meta_data, f, protocol=-1)
-    print 'Dumped.'
+      #pickle.dump(meta_data, f, protocol=-1)
+      cPickle.dump(meta_data, f, protocol=-1)
+    print('Dumped.')
 
   def load_meta_data(self):
-    with open(self.get_meta_data_fn()) as f:
-      return pickle.load(f)
+    with open(self.get_meta_data_fn(), 'rb') as f:
+      #return pickle.load(f)
+      return cPickle.load(f, encoding="unicode")
 
   def get_image_pack_fn(self, fold):
     return self.get_directory() + self.get_subset_name(
@@ -74,7 +77,8 @@ class DataSet:
 
   def dump_image_pack(self, image_pack, fold):
     with open(self.get_image_pack_fn(fold), 'wb') as f:
-      pickle.dump(image_pack, f, protocol=-1)
+      #pickle.dump(image_pack, f, protocol=-1)
+      cPickle.dump(image_pack, f, protocol=-1)
 
   def load_image_pack(self, fold):
     with open(self.get_meta_data_fn()) as f:
@@ -83,7 +87,7 @@ class DataSet:
   def regenerate_image_pack(self, meta_data, fold):
     image_pack = []
     for i, r in enumerate(meta_data):
-      print 'Processing %d/%d\r' % (i + 1, len(meta_data)),
+      print('Processing %d/%d\r' % (i + 1, len(meta_data))),
       sys.stdout.flush()
       r.img = self.load_image_without_mcc(r)
 
@@ -104,8 +108,8 @@ class DataSet:
 
   def regenerate_image_packs(self):
     meta_data = self.load_meta_data()
-    print 'Dumping image packs...'
-    print '%s folds found' % len(meta_data)
+    print('Dumping image packs...')
+    print('%s folds found' % len(meta_data))
     for f, m in enumerate(meta_data):
       self.regenerate_image_pack(m, f)
 
@@ -120,13 +124,16 @@ class GehlerDataSet(DataSet):
 
   def regenerate_meta_data(self):
     meta_data = []
-    print "Loading and shuffle fn_and_illum[]"
+    print("Loading and shuffle fn_and_illum[]")
     ground_truth = scipy.io.loadmat(self.get_directory() + 'ground_truth.mat')[
         'real_rgb']
     ground_truth /= np.linalg.norm(ground_truth, axis=1)[..., np.newaxis]
     filenames = sorted(os.listdir(self.get_directory() + 'images'))
     folds = scipy.io.loadmat(self.get_directory() + 'folds.mat')
+
     filenames2 = map(lambda x: str(x[0][0][0]), folds['Xfiles'])
+    filenames2 = list(filenames2) ## Added by G
+
     #print filenames
     #print filenames2
     for i in range(len(filenames)):
@@ -144,18 +151,18 @@ class GehlerDataSet(DataSet):
 
     if DATA_FRAGMENT != -1:
       meta_data = meta_data[:DATA_FRAGMENT]
-      print 'Warning: using only first %d images...' % len(meta_data)
+      print('Warning: using only first %d images...' % len(meta_data))
 
     meta_data_folds = [[], [], []]
     for i in range(FOLDS):
       fold = list(folds['te_split'][0][i][0])
-      print len(fold)
+      print(len(fold))
       for j in fold:
         meta_data_folds[i].append(meta_data[j - 1])
     for i in range(3):
-      print 'Fold', i
-      print map(lambda m: m.fn, meta_data_folds[i])
-    print sum(map(len, meta_data_folds))
+      print('Fold', i)
+      print(map(lambda m: m.fn, meta_data_folds[i]))
+    print(sum(map(len, meta_data_folds)))
     assert sum(map(len, meta_data_folds)) == len(filenames)
     for i in range(3):
       assert set(meta_data_folds[i]) & set(meta_data_folds[(i + 1) % 3]) == set(
@@ -245,7 +252,7 @@ class ChengDataSet(DataSet):
 
     if DATA_FRAGMENT != -1:
       meta_data = meta_data[:DATA_FRAGMENT]
-      print 'Warning: using only first %d images...' % len(meta_data)
+      print('Warning: using only first %d images...' % len(meta_data))
 
     meta_data = slice_list(meta_data, [1] * self.get_folds())
     self.dump_meta_data(meta_data)

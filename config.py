@@ -110,7 +110,7 @@ def initialize_dataset_config(dataset_name=None, subset=None, fold=None):
   global TRAINING_FOLDS, TEST_FOLDS
   if DATASET_NAME == 'gehler':
     T = FOLD
-    print 'FOLD', FOLD
+    print('FOLD', FOLD)
     if T != -1:
       TRAINING_FOLDS = ['g%d' % (T), 'g%d' % ((T + 1) % 3)]
       TEST_FOLDS = ['g%d' % ((T + 2) % 3)]

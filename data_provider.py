@@ -1,5 +1,6 @@
 from datasets import get_image_pack_fn, ImageRecord
-import cPickle as pickle
+#import cPickle as pickle
+import _pickle as cPickle
 import numpy as np
 import random
 import threading
@@ -13,15 +14,25 @@ import datasets
 from datasets import get_image_pack_fn
 
 def load_data(folds):
+  import sys # Added by G
+
   records = []
   r = ImageRecord('', '', '', '', '')
   for fold in folds:
     fn = get_image_pack_fn(fold)
-    print 'Loading image pack', fn
+    print('Loading image pack', fn)
     # cached
     if fn not in load_data.data:
-      with open(fn) as f:
-        load_data.data[fn] = pickle.load(f)
+      #with open(fn) as f:
+        #load_data.data[fn] = pickle.load(f)
+      with open(fn,'rb') as f:
+        #load_data.data[fn] = cPickle.load(f)
+        try:
+          load_data.data[fn] = cPickle.load(f)
+        except EOFError:
+          #return {}
+          sys.exit("Done");
+
     records += load_data.data[fn]
   return records
 
@@ -127,7 +138,7 @@ class DataProvider:
     self.records = records
     random.shuffle(self.records)
     self.data_count = len(self.records)
-    print '#records:', self.data_count, 'preprocessing...'
+    print('#records:', self.data_count, 'preprocessing...')
     self.preprocess()
     self.batch_size = None
     self.async_task = None
@@ -149,6 +160,8 @@ class DataProvider:
 
   def shuffle(self):
     ind = range(self.data_count)
+    ind = list(ind) # Added by G
+
     random.shuffle(ind)
     images = [self.images[i] for i in ind]
     nrgbs = [self.nrgbs[i] for i in ind]

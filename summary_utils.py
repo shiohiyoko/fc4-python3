@@ -29,7 +29,7 @@ def _activation_summary(x):
 _activation_summary.summarized = []
 
 
-def put_kernels_on_grid(kernel, (grid_Y, grid_X), pad=1):
+def put_kernels_on_grid(kernel, grid_Y, grid_X, pad=1):
   '''Visualize conv. features as an image (mostly for the 1st layer).
     Place kernel into a grid, with some paddings between adjacent filters.
     Args:
@@ -80,7 +80,7 @@ def put_kernels_on_grid(kernel, (grid_Y, grid_X), pad=1):
 def _get_grid(weights):
   grid_x = 8
   grid_y = int(weights.get_shape()[3]) // grid_x
-  return put_kernels_on_grid(weights, (grid_y, grid_x))
+  return put_kernels_on_grid(weights, grid_y, grid_x)
 
 
 def conv_summary(weights, name):
@@ -90,12 +90,13 @@ def conv_summary(weights, name):
 
 
 # Output: RGB images
-def get_visualization(images, illums_est, illums_pooled, illums_ground,
-                      target_shape):
+def get_visualization(images, illums_est, illums_pooled, illums_ground, target_shape):
+  import tensorflow.compat.v1 as tf
+  tf.disable_v2_behavior()
+
   confidence = tf.sqrt(tf.reduce_sum(illums_est**2, axis=3))
 
-  vis_confidence = confidence[:, :, :,
-                              None]  # / tf.reduce_max(confidence, axis=(1, 2), keep_dims=True)[:,:,:,None]
+  vis_confidence = confidence[:, :, :, None]  # / tf.reduce_max(confidence, axis=(1, 2), keep_dims=True)[:,:,:,None]
 
   color_thres = [tf.constant(250.0 * i) for i in range(1, 5)]
   mean_confidence_value = tf.reduce_mean(confidence, axis=(0, 1, 2))
@@ -120,7 +121,7 @@ def get_visualization(images, illums_est, illums_pooled, illums_ground,
   img = tf.pow(images[:, :, :, ::-1] / 65535 * exposure_boost, 1 / VIS_GAMMA)
   img_corrected = tf.pow(
       images[:, :, :, ::-1] / 65535 / illums_pooled[:, None, None, :] * exposure_boost *
-      tf.reduce_mean(illums_pooled, axis=(1), keep_dims=True)[:, None, None, :],
+      tf.reduce_mean(illums_pooled, axis=(1), keepdims=True)[:, None, None, :],
       1 / VIS_GAMMA)
 
   visualization = [
@@ -137,8 +138,8 @@ def get_visualization(images, illums_est, illums_pooled, illums_ground,
 
   ##################
   confidence_dist = confidence[:, :, :, None] / tf.reduce_sum(
-      confidence, axis=(1, 2), keep_dims=True)[:, :, :, None]
-  mean_est = tf.reduce_mean(vis_est, axis=(1, 2), keep_dims=True)
+      confidence, axis=(1, 2), keepdims=True)[:, :, :, None]
+  mean_est = tf.reduce_mean(vis_est, axis=(1, 2), keepdims=True)
   sq_deviation = tf.pow(vis_est - mean_est, 2)
   weighted_sq_dev = confidence_dist * sq_deviation
   variance = tf.reduce_sum(weighted_sq_dev, axis=(1, 2))
@@ -173,7 +174,7 @@ def get_visualization(images, illums_est, illums_pooled, illums_ground,
             values=visualization[i * images_per_line:(i + 1
                                                      ) * images_per_line]))
   visualization = tf.maximum(0.0, tf.concat(axis=1, values=visualization_lines))
-  print 'visualization shape', visualization.shape
+  print('visualization shape', visualization.shape)
 
   return visualization
 
@@ -196,7 +197,7 @@ def get_gram_matrix(illum_est):
   #    assert illum_est.shape[0] == 1
   width, height = illum_est.get_shape().as_list()[
       1], illum_est.get_shape().as_list()[2]
-  print illum_est.shape
+  print(illum_est.shape)
   est_points = tf.reshape(illum_est[0], [width * height, 3])
   gram = tf.matmul(tf.transpose(est_points), est_points)
   # todo: we should take the average

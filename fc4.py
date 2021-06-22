@@ -1,4 +1,5 @@
-import cPickle as pickle
+#import cPickle as pickle
+import _pickle as cPickle
 import sys
 import cv2
 import os
@@ -19,12 +20,12 @@ def get_average(image_packs):
   data = load_data(image_packs.split(','))
   avg = np.zeros(shape=(3,), dtype=np.float32)
   for record in data:
-    cv2.imshow('img',
-               cv2.resize((record.img / 2.0**16)**0.5, (0, 0), fx=0.2, fy=0.2))
-    cv2.waitKey(0)
+    ### cv2.imshow('img', cv2.resize((record.img / 2.0**16)**0.5, (0, 0), fx=0.2, fy=0.2))
+    ### cv2.waitKey(0)
     avg += np.mean(record.img.astype(np.float32), axis=(0, 1))
   avg = avg / np.linalg.norm(avg)
-  print '(%.3f, %.3f, %.3f)' % (avg[0], avg[1], avg[2])
+  #print '(%.3f, %.3f, %.3f)' % (avg[0], avg[1], avg[2])
+  print('%.3f, %.3f, %.3f' % avg[0], avg[1], avg[2])
 
 
 def test(name, ckpt, image_pack_name=None, output_filename=None):
@@ -44,13 +45,7 @@ def test(name, ckpt, image_pack_name=None, output_filename=None):
     else:
       fcn.load_absolute(name)
     if not external_image:
-      errors, _, _, _, ret, conf = fcn.test(
-          scales=[0.5],
-          summary=True,
-          summary_key=123,
-          data=data,
-          eval_speed=False,
-          visualize=output_filename is None)
+      errors, _, _, _, ret, conf = fcn.test(scales=[0.5], summary=True, summary_key=123, data=data, eval_speed=False, visualize=output_filename is None)
       if output_filename is not None:
         try:
           os.mkdir('outputs')
@@ -62,8 +57,9 @@ def test(name, ckpt, image_pack_name=None, output_filename=None):
           pickle.dump(errors, f)
         with open('outputs/%s_conf.pkl' % output_filename, 'wb') as f:
           pickle.dump(conf, f)
-        print ret
-        print 'results dumped to outputs/%s_err.pkl' % output_filename
+        #print ret
+        print(ret)
+        print('results dumped to outputs/%s_err.pkl' % output_filename)
     else:
       img = cv2.imread(image_pack_name)
       # reverse gamma correction for sRGB
@@ -90,8 +86,8 @@ def test_input_gamma(name,
     if output_filename is not None:
       with open('outputs/%s.pkl' % output_filename, 'wb') as f:
         pickle.dump(ret, f)
-      print ret
-      print 'results dumped'
+      print(ret)
+      print('results dumped')
 
 
 def dump_result(name, ckpt, image_pack_name=None):
@@ -166,6 +162,9 @@ def cont(name, preload, key):
 
 
 def train(name, *args):
+  import tensorflow.compat.v1 as tf
+  tf.disable_v2_behavior()
+
   kwargs = {}
   for arg in args:
     key, val = arg.split('=')
@@ -186,8 +185,8 @@ def show_patches():
     for img in batch[0]:
       #img = img / np.mean(img, axis=(0, 1))[None, None, :]
       img = img / img.max()
-      cv2.imshow("Input", np.power(img, 1 / 2.2))
-      cv2.waitKey(0)
+      ### cv2.imshow("Input", np.power(img, 1 / 2.2))
+      ### cv2.waitKey(0)
 
 
 def dump_gehler():
@@ -217,9 +216,9 @@ def override_global(key, val):
     globals()[key] = float(val)
   else:
     assert False
-  print "Overriding ", key, '=', val
+  print("Overriding ", key, '=', val)
   OVERRODE[key] = val
-  print globals()[key]
+  print(globals()[key])
   initialize_dataset_config()
 
 
@@ -236,7 +235,7 @@ def dump_multi():
 
 if __name__ == '__main__':
   if len(sys.argv) < 2:
-    print 'Usage: ./fccc.py [func]'
+    print('Usage: ./fccc.py [func]')
     exit(-1)
   filename = __file__[2:]
   mode = sys.argv[1]

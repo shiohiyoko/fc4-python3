@@ -41,16 +41,16 @@ def summary_angular_errors(errors):
 
 
 def just_print_angular_errors(results):
-  print "25: %5.3f," % results['25'],
-  print "med: %5.3f" % results['med'],
-  print "tri: %5.3f" % results['tri'],
-  print "avg: %5.3f" % results['mean'],
-  print "75: %5.3f" % results['75'],
-  print "95: %5.3f" % results['95']
+  print("25: %5.3f," % results['25']),
+  print("med: %5.3f" % results['med']),
+  print("tri: %5.3f" % results['tri']),
+  print("avg: %5.3f" % results['mean']),
+  print("75: %5.3f" % results['75']),
+  print("95: %5.3f" % results['95'])
 
 
 def print_angular_errors(errors):
-  print "%d images tested. Results:" % len(errors)
+  print("%d images tested. Results:" % len(errors))
   results = summary_angular_errors(errors)
   just_print_angular_errors(results)
   return results
@@ -255,7 +255,10 @@ def slice_list(l, fractions):
 
 
 def get_session():
-  import tensorflow as tf
+#  import tensorflow as tf
+  import tensorflow.compat.v1 as tf
+  tf.disable_v2_behavior()
+
   config = tf.ConfigProto()
   config.gpu_options.allow_growth = True
   return tf.Session(config=config)
