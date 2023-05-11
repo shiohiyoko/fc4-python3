@@ -64,12 +64,12 @@ def task():
 task.i = 0
 
 if __name__ == '__main__':
-  async = AsyncTaskManager(task)
+  aasync = AsyncTaskManager(task)
   t = time.time()
   for i in range(5):
-    ret = async.get_next()
+    ret = aasync.get_next()
     # ret = task()
     print('got', ret)
     time.sleep(1)
-  async.stop()
+  aasync.stop()
   print(time.time() - t)
